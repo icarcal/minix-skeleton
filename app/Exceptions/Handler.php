@@ -62,4 +62,34 @@ class Handler extends ExceptionHandler
 
         return redirect()->guest(route('login'));
     }
+
+    /**
+     * Create a Symfony response for the given exception.
+     *
+     * @param  \Exception  $e
+     * @return mixed
+     */
+    protected function convertExceptionToResponse(Exception $e)
+    {
+        if ($e instanceof \Symfony\Component\HttpKernel\Exception\UnauthorizedHttpException) {
+            return response()->make(
+                ['data' => ['error' => $e->getMessage()]],
+                method_exists($e, 'getStatusCode') ? $e->getStatusCode() : 500,
+                method_exists($e, 'getHeaders') ? $e->getHeaders() : []
+            );
+        }
+
+        if (config('app.debug') && $this->isHttpException($e)) {
+            $whoops = new \Whoops\Run;
+            $whoops->pushHandler(new \Whoops\Handler\PrettyPageHandler);
+
+            return response()->make(
+                $whoops->handleException($e),
+                method_exists($e, 'getStatusCode') ? $e->getStatusCode() : 500,
+                method_exists($e, 'getHeaders') ? $e->getHeaders() : []
+            );
+        }
+
+        return parent::convertExceptionToResponse($e);
+    }
 }
